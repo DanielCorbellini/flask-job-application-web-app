@@ -1,12 +1,20 @@
 from datetime import datetime
 from flask import Flask, render_template, request, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
 
 app.config["SECRET_KEY"] = "An secret key for you webpage"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"
+app.config["MAIL_SERVER"] = "smtp.gmail.com"
+app.config["MAIL_PORT"] = 465
+app.config["MAIL_USE_SSL"] = True
+app.config["MAIL_USERNAME"] = "THE GMAIL THAT WILL RECEIVE THE MESSAGE"
+app.config["MAIL_PASSWORD"] = "YOUR APP PASSWORD"
 db = SQLAlchemy(app)
+
+mail = Mail(app)
 
 
 class Form(db.Model):
@@ -32,6 +40,17 @@ def index():
                     email=email, date=date_obj, occupation=occupation)
         db.session.add(form)
         db.session.commit()
+
+        message_body = f"Thank for your submission, {first_name}. " \
+                       f"Here are your data:\nFirst name: {first_name}\n" \
+                       f"Last name: {last_name}\nDate: {date}\n" \
+                       f"Thank you!"
+        message = Message(subject="New form submission",
+                          sender=app.config["MAIL_USERNAME"],
+                          recipients=[email],
+                          body=message_body)
+        mail.send(message)
+
         flash(f"{first_name}, Your form was submitted successfully", "success")
         return redirect(url_for("index"))
 
